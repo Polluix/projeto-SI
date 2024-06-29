@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
 import numpy as np
+import matplotlib.pyplot as plt
 
 # -----------------SELECAO DE FEATURES--------------------
 # # leitura da base
@@ -69,7 +70,7 @@ import numpy as np
 
 # ----------------------------------------------------------------
 
-# ----------------------GRID SEARCH--------------------
+# ----------------DISTRIBUIÇÃO DE CLASSES--------------------------
 base_treino = pd.read_csv('./src/base_treino_preprocessada.csv')
 
 # adequação da base de treino às features presentes na base de teste
@@ -80,10 +81,26 @@ for i in base_teste.isna().sum():
     if i!=0:
         print(i)
 
-# print(base_treino['CLASSE'].value_counts())
+# -----------PLOT DISTRIBUIÇÃO DE CLASSES----------------------------------------
+# elements_per_class = base_treino['CLASSE'].value_counts().sort_index()
+
+# classes = np.arange(elements_per_class.index.min(),elements_per_class.index.max()+1,1)
+
+# plt.bar(classes, elements_per_class)
+
+# for i, data in enumerate(elements_per_class):
+#     plt.text(x=i+1 , y =data+0.5 , s=f"{data}")
+
+# plt.yticks([])
+# plt.xticks(classes)
+# plt.savefig("Elementos_por_classe.png")
+# plt.show()
+# ----------------------------------------------------------------------------
 
 assert len(base_treino.columns) == len(base_teste.columns), "A base de treino possui features diferentes da base de teste."
 
+
+# ----------------------GRID SEARCH--------------------
 # separação das bases de treino e teste para aplicação nos modelos
 X_train = base_treino.drop(columns=['CLASSE'])
 y_train = base_treino.pop('CLASSE')
@@ -99,8 +116,8 @@ grid_knn = {
 }
 
 grid_mlp = {
-    'hidden_layer_sizes':[(100,),(50,),(100,100),(100,50),(50,50)],
-    'learning_rate':['constant', 'adaptative'],
+    'hidden_layer_sizes':[(100,100,100),(100,100,50),(100,50,50),(50,50,50)],
+    'learning_rate':['constant', 'adaptive'],
     'activation':['tanh', 'logistic'],
     'solver':['adam', 'sgd']
 }
@@ -112,17 +129,21 @@ grid_dtc = {
 }
 
 KNN = knn()
-MLP = mlp(max_iter=500)
+MLP = mlp(max_iter=2000)
 DTC = dtc()
 
 clf_knn = GridSearchCV(KNN, grid_knn,cv=7)
 clf_mlp = GridSearchCV(MLP, grid_mlp,cv=7)
-clf_dtc = GridSearchCV(DTC, grid_dtc,cv=5)
+clf_dtc = GridSearchCV(DTC, grid_dtc,cv=7)
 
 clf_knn.fit(X_train, y_train)
+clf_mlp.fit(X_train, y_train)
+clf_dtc.fit(X_train, y_train)
 
 # Encontrar os melhores hiperparâmetros
-print("Melhores hiperparâmetros:", clf_knn.best_params_)
+print("Melhores hiperparâmetros KNN:", clf_knn.best_params_)
+print("Melhores hiperparâmetros MLP:", clf_mlp.best_params_)
+print("Melhores hiperparâmetros DTC:", clf_dtc.best_params_)
 
 
 
