@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier as knn
 from sklearn.tree import DecisionTreeClassifier as dtc
-from sklearn.neural_network import _multilayer_perceptron as mlp
+from sklearn.neural_network import MLPClassifier as mlp
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
@@ -25,6 +25,10 @@ import numpy as np
 #                                                      stratify=y)
 
 # features = X_train.columns.to_list()
+
+# # remove valores nulos
+# X_train = X_train.dropna()
+# y_train = y_train.dropna()
 
 # X_train = X_train.values
 # y_train=y_train.values
@@ -71,6 +75,13 @@ base_treino = pd.read_csv('./src/base_treino_preprocessada.csv')
 # adequação da base de treino às features presentes na base de teste
 base_teste = pd.read_csv('./src/base_teste.csv',usecols=base_treino.columns.to_list())
 
+# printa valores nulos na base de teste (se existir)
+for i in base_teste.isna().sum():
+    if i!=0:
+        print(i)
+
+# print(base_treino['CLASSE'].value_counts())
+
 assert len(base_treino.columns) == len(base_teste.columns), "A base de treino possui features diferentes da base de teste."
 
 # separação das bases de treino e teste para aplicação nos modelos
@@ -82,7 +93,7 @@ y_test = base_teste.pop('CLASSE')
 
 # definição dos hiperparâmetros para o gridsearch
 grid_knn = {
-    'metric':['euclidean', 'haversine', 'manhattan'],
+    'metric':['euclidean', 'manhattan'],
     'n_neighbors':[3,5,7,9],
     'weights':['uniform','distance'],
 }
@@ -94,12 +105,24 @@ grid_mlp = {
     'solver':['adam', 'sgd']
 }
 
+grid_dtc = {
+    'criterion':['gini', 'entropy'],
+    'min_samples_split':[2,4,6,8,10],
+    'splitter':['best', 'random']
+}
+
 KNN = knn()
-MLP = mlp()
+MLP = mlp(max_iter=500)
 DTC = dtc()
 
-clf_knn = GridSearchCV(KNN, grid_knn,cv=10)
-clf_mlp = GridSearchCV(MLP, grid_knn,cv=10)
-clf_dtc = GridSearchCV(DTC, grid_knn,cv=10)
+clf_knn = GridSearchCV(KNN, grid_knn,cv=7)
+clf_mlp = GridSearchCV(MLP, grid_mlp,cv=7)
+clf_dtc = GridSearchCV(DTC, grid_dtc,cv=5)
+
+clf_knn.fit(X_train, y_train)
+
+# Encontrar os melhores hiperparâmetros
+print("Melhores hiperparâmetros:", clf_knn.best_params_)
+
 
 
